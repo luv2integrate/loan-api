@@ -1,0 +1,14 @@
+[
+  {
+    "name": "test name",
+    "credit_score": 600,
+    "email": "test@email.com",
+    "gender": "Male"
+  },
+  {
+    "name": "test name",
+    "credit_score": 600,
+    "email": "test@email.com",
+    "gender": "Male"
+  }
+]

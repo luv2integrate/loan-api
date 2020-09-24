@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="creditScoreType" format="csv">
+      <types:shape format="weave" example="data/creditScore.csv"><![CDATA[%dw 2.0
+
+type creditScoreType = Array<{|  name: String,   credit_score: String,   email: String,   gender: String|}>
+
+]]></types:shape>
+      <types:properties>
+        <types:property name="headerLineNumber" value="0"/>
+        <types:property name="header" value="true"/>
+        <types:property name="isQuotedString" value="false"/>
+      </types:properties>
+    </types:type>
+    <types:type name="creditScoreJsonType" format="json">
+      <types:shape format="weave" example="examples/creditScoreJSONType.json"><![CDATA[%dw 2.0
+
+type creditScoreJsonType = Array<{|  name: String,   credit_score: Number {"typeId": "int"},   email: String,   gender: String|}> {"example": "[{\\\"name\\\":\\\"test name\\\",\\\"credit_score\\\":600,\\\"email\\\":\\\"test@email.com\\\",\\\"gender\\\":\\\"Male\\\"},{\\\"name\\\":\\\"test name\\\",\\\"credit_score\\\":600,\\\"email\\\":\\\"test@email.com\\\",\\\"gender\\\":\\\"Male\\\"}]"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="loanRequestTyep" format="json">
+      <types:shape format="weave" example="examples/loanRequestType.json"><![CDATA[%dw 2.0
+
+type loanRequestTyep = {|
+  name: String, 
+  amount: Number {"typeId": "int"}, 
+  duration: Number {"typeId": "int"}
+|} {"example": "{\\\"name\\\":\\\"Tatiania Boutwell\\\",\\\"amount\\\":2000,\\\"duration\\\":12}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#3f2f9f4a-bc2a-4371-ba60-366923a462d9">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="loanRequestTyep"/>
+        </types:message>
+        <types:variables>
+          <types:variable name="creditScores" type="creditScoreJsonType"/>
+        </types:variables>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

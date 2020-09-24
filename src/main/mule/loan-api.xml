@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="0d9f9740-9b30-4f06-b2a8-c65cb1f97d93" basePath="/loan-api">
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="16d92a96-c6cf-4dd9-92d2-d924b58e7da3" >
+		<file:connection workingDir="D:\SalaamIT\August2020_Batch\APSWorkSpace1\loan-api\src\main\resources\data" />
+	</file:config>
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="75658466-d6c2-41bc-8bdc-c264f2c1574b" />
+	<sub-flow name="getloanSub_Flow" doc:id="55fbb4b8-6e23-4b37-8dde-8470dab0a437" >
+		<logger level="INFO" doc:name="Logger" doc:id="e248cc63-afd5-4334-9747-f0683d132798" message="#[vars.originalRequest]" />
+		<try doc:name="Try" doc:id="6c43ca43-a88a-4f82-a29b-2aea1e52bab8" >
+			<file:read doc:name="Read" doc:id="1abdab63-07bf-4ea0-bec7-8a41d75c27ee" config-ref="File_Config" path="creditScore.csv" target="creditScores" />
+			<ee:transform doc:name="Transform Message" doc:id="3f2f9f4a-bc2a-4371-ba60-366923a462d9">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+vars.creditScores filter ($.name contains payload.name) map((item,index) ->
+{
+    "name":item.name,
+    "credit_score":item.credit_score
+})
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<validation:is-not-null doc:name="Is not null" doc:id="35974f4b-623b-4d4b-988a-d94ec357723f" value="#[payload.name]" message="CUSTOM: CREDITSCORE NOT FOUND FOR CUSTOMER" config-ref="Validation_Config"/>
+		</try>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="82ae3e64-0e9d-40ac-b730-a759a2c03fc6" >
+			<route >
+				<ee:transform doc:name="Transform Message" doc:id="4a788d09-7cf2-4189-8d9f-6d593e6a67ce" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	interestRate:1000/(payload.credit_score[0] as Number),
+	bankName:"Standard Bank"
+	
+	}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+			<route >
+				<ee:transform doc:name="Transform Message" doc:id="b4ca4290-34cd-4300-94b9-59745e1f1937" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	interestRate:900/(payload.credit_score[0] as Number),
+	bankName:"Bronze Bank"
+	
+	}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+			<route >
+				<ee:transform doc:name="Transform Message" doc:id="bca7ad6c-a376-49e6-8afe-f72b31715d2b" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	interestRate:800/(payload.credit_score[0] as Number),
+	bankName:"Silver Bank"
+	}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+			<route >
+				<ee:transform doc:name="Transform Message" doc:id="7a5e6834-85bb-4a87-aafa-34a869bcbec6" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	interestRate:600/(payload.credit_score[0] as Number),
+	bankName:"Gold Bank"
+	}
+	]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="1c2f1354-9085-478d-95de-8681f996afb8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+(flatten(payload..payload) orderBy (item)->item.interestRate)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	
+</sub-flow>
+	<flow name="getBestQuoteloanFlow" doc:id="08659ed0-deb6-4e20-836e-520b6294cac5" >
+		<http:listener doc:name="Listener" doc:id="ed5f2cc5-80c6-4c72-8f7e-14b7b9ac03b2" config-ref="HTTP_Listener_config" path="/getBestLoanQuote"/>
+		<flow-ref doc:name="Flow Reference" doc:id="bc1b2940-fbd0-41c2-933d-77e18862273c" name="getloanSub_Flow"/>
+		<ee:transform doc:name="Transform Message" doc:id="23efbe00-154b-4ef2-973b-1a8c33e32a56" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload[0]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="661855eb-5672-480d-92a7-e633d8a3e8f0" message="#[payload]"/>
+	</flow>
+	<flow name="getAllQuoteloanFlow" doc:id="444232b7-2674-40fb-a24c-1cd7f836a139" >
+		<http:listener doc:name="Listener" doc:id="92b5c77a-2ff8-444e-b55f-8fa3e03c425e" config-ref="HTTP_Listener_config" path="/getAllQuotes" />
+		<flow-ref doc:name="getAllQouteFlow Reference" doc:id="a809fd1f-90e3-4a9c-a9e4-f91a7635329b" name="getloanSub_Flow" />
+		<logger level="INFO" doc:name="Logger" doc:id="ae5559d4-b886-48d4-a4e6-3ba9b7898db5" message="#[payload]" />
+	</flow>
+	</mule>
